@@ -3,15 +3,15 @@ import os, shutil
 import time as t
 from PIL import Image, ImageChops
 import tkinter as tk
-from tkinter import ttk
 from threading import Thread
 from tkinter import filedialog
+from ctypes import windll
 
 
 def is_picture(counter):
     im = Image.open('temp/scrapping/image' + str(counter) + '.png')
     rgb_im = im.convert('RGB')
-    r, g, b = rgb_im.getpixel((2000, 3000))
+    r, g, b = rgb_im.getpixel((2000, 1300))
     if r == 255 and g == 255 and b == 255:
         return False
     else:
@@ -61,12 +61,14 @@ def file_save(name, status):
         lbl.config(text='Downloading was cancelled')
         btn.config(state='normal')
         return
-    im = Image.open(path)
-    im.save(f)
-    os.remove(path)
-    f.close()
-    lbl.config(text='Success! File saved as : ' + str(status) + '!')
-    btn.config(state='normal')
+    if os.path.abspath(path) != f.name.replace('/', '\\'):
+        im = Image.open(path)
+        im.save(f)
+        os.remove(path)
+        f.close()
+        lbl.config(text='Success! File saved as : ' + str(status) + '!')
+    else:
+        lbl.config(text='Failed! Please next time don\'t replace file in script directory!')
 
 
 def do_scrapping(url):
@@ -78,7 +80,7 @@ def do_scrapping(url):
             break
         url += char
 
-    lbl.config(text='2/3: Scrapping: starting webdriver...')
+    lbl.config(text='2/3: Scrapping: starting webdriver... [it takes several seconds]')
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
@@ -87,7 +89,8 @@ def do_scrapping(url):
     driver.get(url)
     xPath3 = r".//html/body/div[3]/div[3]/div/div/div/div[3]/div"  # img xPath
     xPath2 = r".//html/body/div[3]/div[3]/div/div/div[2]/div[1]/div[2]/div[1]/div"  # zoom xPath
-    imageAppeared = True  # flag for starting click on image
+    image_appeared = False  # flag for starting click on image
+    image_zoom_taked = False
     last_file = ''  # last succeed file
     lbl.config(text='2/3: Scrapping: waiting for response')
     driver.implicitly_wait(1)
@@ -107,26 +110,28 @@ def do_scrapping(url):
 
     name_file = authorPic + name_pic
     name_file = remove(name_file, '\/:*?"<>|')
-    lbl.config(text='2/3: Scrapping: starting ' + name_file)
+    lbl.config(text='2/3: Scrapping: starting ' + name_file + ' [+3 sec]')
+    t.sleep(3)
     for i in range(0, 59):  # 60 attempts
-
-        if imageAppeared:
+        t.sleep(1)
+        if image_appeared:
+            lbl.config(text='2/3: Scrapping: %sth attempt, image appeared, zooming...' % str(i+1)+ ' [+6 sec]')
             t.sleep(3)
-            lbl.config(text='2/3: Scrapping: %s/60 it looks like the image appeared, zooming...' % str(i+1))
             elem2 = driver.find_element_by_xpath(xPath2)
             elem3 = driver.find_element_by_xpath(xPath3)
             driver.execute_script("arguments[0].click();", elem2)
             driver.execute_script("arguments[0].click();", elem3)
             t.sleep(3)
-            imageAppeared = False
+            image_appeared = False
+            image_zoom_taked = True
         else:
-            lbl.config(text='2/3: Scrapping: %s/60 waiting for the image...' % str(i+1))
-        lbl.config(text='2/3: Scrapping: %s/60 taking snapshot' % str(i+1))
+            lbl.config(text='2/3: Scrapping: %sth attempt, waiting for the image...' % str(i+1))
+        lbl.config(text='2/3: Scrapping: %sth attempt, taking snapshot' % str(i+1))
         driver.save_screenshot('temp/scrapping/image%s.png' % str(i))
-        lbl.config(text='2/3: Scrapping: %s/60 checking downloading progress...' % str(i+1))
+        lbl.config(text='2/3: Scrapping: %sth attempt, checking progress...' % str(i+1))
 
-        if is_picture(i):
-            imageAppeared = False
+        if is_picture(i) and not image_zoom_taked:
+            image_appeared = True
 
         if is_same(i):
             last_file = 'temp/scrapping/image%s.png' % str(i)
@@ -150,6 +155,8 @@ def do_finally_changes(last_file, name_file):
 
 def start_process():
     btn.config(state='disabled')
+    btnPaste.config(state='disabled')
+    ent.config(state='disabled')
     lbl.config(text='Working...')
     lbl.config(text='1/3: Initializing folders')
     initialize_folders()
@@ -159,6 +166,9 @@ def start_process():
     status = do_finally_changes(file, name)
     lbl.config(text='Saving the file: ' + str(status) + '...')
     file_save(status + '.png', status + '.png')
+    btnPaste.config(state='normal')
+    ent.config(state='normal')
+    btn.config(state='normal')
 
 
 def start():
@@ -182,18 +192,26 @@ def on_key_release(event):
         event.widget.event_generate("<<SelectAll>>")
 
 
+def paste():
+    entryText.set(root.clipboard_get())
+
+
 root = tk.Tk()
-root.title('Google Art Downloader 0.1 beta')
+root.title('Google Art Downloader 0.1.1 beta')
+windll.shcore.SetProcessDpiAwareness(1)
+root.resizable(0, 0)
 
 entryText = tk.StringVar()
 ent = tk.Entry(root, width=77, textvariable=entryText)
-entryText.set(r"https://www.google.com/culturalinstitute/beta/asset/sunflowers/NgEmkPlWfmO9aQ")
+entryText.set(r"https://artsandculture.google.com/asset/the-starry-night/bgEuwDxel93-Pg")
 lbl = tk.Label(root, width=80)
 btn = tk.Button(root, text="Download", command=start)
+btnPaste = tk.Button(root, text="Paste url", command=paste)
 
-lbl.grid(row=1, column=1, columnspan=2)
-ent.grid(row=2, column=1)
-btn.grid(row=2, column=2)
+lbl.grid(row=1, column=1, columnspan=3, pady=1)
+ent.grid(row=2, column=1, padx=6, pady=1)
+btnPaste.grid(row=2, column=2, padx=3, pady=2)
+btn.grid(row=2, column=3, padx=3, pady=2)
 
 lbl.configure(text='Insert here link to picture from Google Arts & Culture:')
 ent.bind("<Key>", on_key_release, "+")
