@@ -86,10 +86,14 @@ def do_scrapping(url):
     options.add_argument('--disable-gpu')
     driver = webdriver.Chrome(executable_path=r"chromedriver.exe", chrome_options=options)
     driver.set_window_size(4000, 4000)
-    driver.get(url)
+    if exImg.get() == 1:
+        driver.get(url + '?avm=3')
+    else:
+        driver.get(url)
     xPath3 = r".//html/body/div[3]/div[3]/div/div/div/div[3]/div"  # img xPath
     xPath2 = r".//html/body/div[3]/div[3]/div/div/div[2]/div[1]/div[2]/div[1]/div"  # zoom xPath
     xPath1 = r".//html/body/div[3]/div[3]/div/div/div[3]/div/content/span"  # open img xPath
+    xPath0 = r".//html/body/div[3]/div[3]/div/div/div[2]/div[1]/div[2]/div[2]/div"  # out zoom
     image_appeared = False  # flag for starting click on image
     image_zoom_taked = False
     last_file = ''  # last succeed file
@@ -110,29 +114,35 @@ def do_scrapping(url):
         name_pic = driver.title[0:-23]
 
     name_file = authorPic + name_pic
-    name_file = remove(name_file, '\/:*?"<>|')
+    name_file = remove(name_file, '\/:*?="<>|')
     lbl.config(text='2/3: Scrapping: starting ' + name_file + ' [+3 sec]')
     t.sleep(3)
     for i in range(0, 45):  # 45 attempts
         t.sleep(1)
         if image_appeared:
-            lbl.config(text='2/3: Scrapping: %sth attempt, image appeared, zooming...' % str(i+1) + ' [+6 sec]')
-            t.sleep(3)
-            if exImg.get() == 1:
-                elem2 = driver.find_element_by_xpath(xPath1)
-            else:
+            if exImg.get() == 0:
+                lbl.config(text='2/3: Scrapping: %sth attempt, image appeared, zooming...' % str(i+1) + ' [+6 sec]')
+                t.sleep(3)
                 elem2 = driver.find_element_by_xpath(xPath2)
-            elem3 = driver.find_element_by_xpath(xPath3)
-            driver.execute_script("arguments[0].click();", elem2)
-            driver.execute_script("arguments[0].click();", elem3)
-            t.sleep(3)
-            image_appeared = False
-            image_zoom_taked = True
+                elem3 = driver.find_element_by_xpath(xPath3)
+                driver.execute_script("arguments[0].click();", elem2)
+                driver.execute_script("arguments[0].click();", elem3)
+                t.sleep(2)
+                image_appeared = False
+                image_zoom_taked = True
+            else:
+                lbl.config(text='2/3: Scrapping: %sth attempt, image appeared, waiting...' % str(i+1) + ' [+6 sec]')
+                t.sleep(3)
+                elem3 = driver.find_element_by_xpath(xPath3)
+                driver.execute_script("arguments[0].click();", elem3)
+                t.sleep(3)
+                image_appeared = False
+                image_zoom_taked = True
         else:
             lbl.config(text='2/3: Scrapping: %sth attempt, waiting for the image...' % str(i+1))
         lbl.config(text='2/3: Scrapping: %sth attempt, taking snapshot' % str(i+1))
         driver.save_screenshot('temp/scrapping/image%s.png' % str(i))
-        lbl.config(text='2/3: Scrapping: %sth attempt, checking progress...' % str(i+1))
+        lbl.config(text='2/3: Scrapping: %sth attempt, checking progress.. [+ 1 sec].' % str(i+1))
 
         if is_picture(i) and not image_zoom_taked:
             image_appeared = True
@@ -145,12 +155,14 @@ def do_scrapping(url):
 
 
 def do_finally_changes(last_file, name_file):
+    if name_file == '':
+        name_file = 'IMG'
     if last_file != '':
         shutil.copyfile(last_file, 'temp/image_result.png')
         shutil.rmtree('temp/scrapping')
         imOp = Image.open('temp/image_result.png')
         if exImg.get() == 1:
-            im = imOp.crop((0, 50, 4000, 4000))  # 20!8
+            im = imOp.crop((0, 50, 4000, 4000))
         else:
             im = imOp
         im = trim(im)
