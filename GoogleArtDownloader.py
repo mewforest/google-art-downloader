@@ -39,8 +39,8 @@ def trim(image):
         return image.crop(bbox)
 
 
-def remove(value, deletechars):
-    for c in deletechars:
+def remove(value, delete_chars):
+    for c in delete_chars:
         value = value.replace(c, '')
     return value
 
@@ -89,6 +89,7 @@ def do_scrapping(url):
     driver.get(url)
     xPath3 = r".//html/body/div[3]/div[3]/div/div/div/div[3]/div"  # img xPath
     xPath2 = r".//html/body/div[3]/div[3]/div/div/div[2]/div[1]/div[2]/div[1]/div"  # zoom xPath
+    xPath1 = r".//html/body/div[3]/div[3]/div/div/div[3]/div/content/span"  # open img xPath
     image_appeared = False  # flag for starting click on image
     image_zoom_taked = False
     last_file = ''  # last succeed file
@@ -112,12 +113,15 @@ def do_scrapping(url):
     name_file = remove(name_file, '\/:*?"<>|')
     lbl.config(text='2/3: Scrapping: starting ' + name_file + ' [+3 sec]')
     t.sleep(3)
-    for i in range(0, 59):  # 60 attempts
+    for i in range(0, 25):  # 25 attempts
         t.sleep(1)
         if image_appeared:
-            lbl.config(text='2/3: Scrapping: %sth attempt, image appeared, zooming...' % str(i+1)+ ' [+6 sec]')
+            lbl.config(text='2/3: Scrapping: %sth attempt, image appeared, zooming...' % str(i+1) + ' [+6 sec]')
             t.sleep(3)
-            elem2 = driver.find_element_by_xpath(xPath2)
+            if exImg:
+                elem2 = driver.find_element_by_xpath(xPath1)
+            else:
+                elem2 = driver.find_element_by_xpath(xPath2)
             elem3 = driver.find_element_by_xpath(xPath3)
             driver.execute_script("arguments[0].click();", elem2)
             driver.execute_script("arguments[0].click();", elem3)
@@ -132,7 +136,6 @@ def do_scrapping(url):
 
         if is_picture(i) and not image_zoom_taked:
             image_appeared = True
-
         if is_same(i):
             last_file = 'temp/scrapping/image%s.png' % str(i)
             break
@@ -145,7 +148,11 @@ def do_finally_changes(last_file, name_file):
     if last_file != '':
         shutil.copyfile(last_file, 'temp/image_result.png')
         shutil.rmtree('temp/scrapping')
-        im = Image.open('temp/image_result.png')
+        imOp = Image.open('temp/image_result.png')
+        if exImg:
+            im = imOp.crop((0, 50, 4000, 4000))  # 20!8
+        else:
+            im = imOp
         im = trim(im)
         im.save(name_file + '.png')
         shutil.rmtree('temp')
@@ -169,7 +176,6 @@ def start_process():
     btnPaste.config(state='normal')
     ent.config(state='normal')
     btn.config(state='normal')
-
 
 def start():
     lbl.config(text="Starting..")
@@ -197,7 +203,7 @@ def paste():
 
 
 root = tk.Tk()
-root.title('Google Art Downloader 0.1.1 beta')
+root.title('Google Art Downloader 0.1.2 beta')
 windll.shcore.SetProcessDpiAwareness(1)
 root.resizable(0, 0)
 
@@ -207,11 +213,14 @@ entryText.set(r"https://artsandculture.google.com/asset/the-starry-night/bgEuwDx
 lbl = tk.Label(root, width=80)
 btn = tk.Button(root, text="Download", command=start)
 btnPaste = tk.Button(root, text="Paste url", command=paste)
+exImg = tk.IntVar()
+chk = tk.Checkbutton(root, text="Check this, if your image cropped wrongly (only for elongated vertical image)", variable=exImg)
 
 lbl.grid(row=1, column=1, columnspan=3, pady=1)
 ent.grid(row=2, column=1, padx=6, pady=1)
 btnPaste.grid(row=2, column=2, padx=3, pady=2)
 btn.grid(row=2, column=3, padx=3, pady=2)
+chk.grid(row=3, column=1, columnspan=1, pady=1)
 
 lbl.configure(text='Insert here link to picture from Google Arts & Culture:')
 ent.bind("<Key>", on_key_release, "+")
