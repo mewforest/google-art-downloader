@@ -113,12 +113,12 @@ def do_scrapping(url):
     name_file = remove(name_file, '\/:*?"<>|')
     lbl.config(text='2/3: Scrapping: starting ' + name_file + ' [+3 sec]')
     t.sleep(3)
-    for i in range(0, 25):  # 25 attempts
+    for i in range(0, 45):  # 45 attempts
         t.sleep(1)
         if image_appeared:
             lbl.config(text='2/3: Scrapping: %sth attempt, image appeared, zooming...' % str(i+1) + ' [+6 sec]')
             t.sleep(3)
-            if exImg:
+            if exImg.get() == 1:
                 elem2 = driver.find_element_by_xpath(xPath1)
             else:
                 elem2 = driver.find_element_by_xpath(xPath2)
@@ -149,7 +149,7 @@ def do_finally_changes(last_file, name_file):
         shutil.copyfile(last_file, 'temp/image_result.png')
         shutil.rmtree('temp/scrapping')
         imOp = Image.open('temp/image_result.png')
-        if exImg:
+        if exImg.get() == 1:
             im = imOp.crop((0, 50, 4000, 4000))  # 20!8
         else:
             im = imOp
