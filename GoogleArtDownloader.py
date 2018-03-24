@@ -164,6 +164,7 @@ def start_process():
     btn.config(state='disabled')
     btnPaste.config(state='disabled')
     ent.config(state='disabled')
+    chk.config(state='disabled')
     lbl.config(text='Working...')
     lbl.config(text='1/3: Initializing folders')
     initialize_folders()
@@ -176,6 +177,8 @@ def start_process():
     btnPaste.config(state='normal')
     ent.config(state='normal')
     btn.config(state='normal')
+    chk.config(state='normal')
+
 
 def start():
     lbl.config(text="Starting..")
