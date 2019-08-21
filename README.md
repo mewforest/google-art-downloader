@@ -1,3 +1,9 @@
+> **Important Note:** The code in this repository does not work anymore, since Google Arts & Culture was updated.
+> You can use
+> - [dezoomify](https://ophir.alwaysdata.net/dezoomify/dezoomify.html) (works online),
+> - [dezoomify-rs](https://github.com/lovasoa/dezoomify-rs) (a command-line application for windows, linux and macos),
+> - or [gapdecoder](https://github.com/gap-decoder/gapdecoder) (a python script) instead.
+
 # Google Art Downloader beta
 This utility allows you to save all of the images from [Google Art Project](https://artsandculture.google.com) in high quality (up to 4K). 
 ## Using utility
