@@ -6,7 +6,6 @@ import tkinter as tk
 import webbrowser
 from threading import Thread
 from tkinter import filedialog
-from ctypes import windll
 import selenium.common.exceptions
 from PIL import Image, ImageChops
 from selenium import webdriver
@@ -240,7 +239,6 @@ def on_key_release(event):
 if __name__ == '__main__':
     root = tk.Tk()
     root.title('Google Art Downloader 0.1.3')
-    windll.shcore.SetProcessDpiAwareness(1)
     root.resizable(0, 0)
 
     entryText = tk.StringVar()
