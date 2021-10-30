@@ -102,3 +102,4 @@ ENV/
 venv/
 .vscode/
 .idea/
+.idea

@@ -2,16 +2,15 @@
 
 This utility allows you to save all of the images from [Google Art Project](https://artsandculture.google.com) in high quality (up to 4K). 
 
-## Status of project
-
-Google art downloader will receive minor updates and support in issues section.
-
 ## Using utility
-Just download [google-art-downloader.zip](https://github.com/mewforest/google-art-downloader/releases/download/v0.1.2-beta/google-art-downloader-0-1-2.zip) from [releases](https://github.com/mewforest/google-art-downloader/releases), unzip it to any folder and run **google-art-downloader.exe**. Then insert link to the text field using `CTRL+V` or button **"Paste url"** (yes, you can delete example link), click **"Download"** and wait until the image is ready.
+Just download [google-art-downloader.zip](https://github.com/mewforest/google-art-downloader/releases/download/v0.1.2-beta/google-art-downloader-0-1-2.zip) 
+from [releases](https://github.com/mewforest/google-art-downloader/releases), unzip it to any folder and run **google-art-downloader.exe**. Then insert link 
+to the text field using `CTRL+V` or button **"Paste url"**, click **"Download"** and wait until the image is ready.
 
 ![Screenshot of the interface](scr.png)
 
 ## Dependencies
+
 Compiled release requires just connection to the Internet and Chrome installed (added in PATH).
 
 Source code has written in Python 3.6 and has the following dependencies: Selenium, Pillow (PIL).
