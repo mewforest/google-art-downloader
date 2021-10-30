@@ -8,6 +8,8 @@ Cross-platform utility allows you to save all images from [Google Art Project](h
 Just download archive from [releases](https://github.com/mewforest/google-art-downloader/releases) and unzip it to any
 folder, after all: just run **google-art-downloader.exe**.
 
+![2021-10-31_01h43_29](https://user-images.githubusercontent.com/15357833/139560460-020941b1-bf22-43c2-91f2-c6c1640d1b4b.png)
+
 You can insert link to the text field using button **"Paste url"** (or `CTRL+V`) and click **"Download"** to start the image downloading.
 
 ## Requirements
