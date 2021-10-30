@@ -1,51 +1,68 @@
-from selenium import webdriver
 import os, shutil
 import time as t
-from PIL import Image, ImageChops
 import tkinter as tk
+import webbrowser
 from threading import Thread
 from tkinter import filedialog
 from ctypes import windll
 
+import selenium.common.exceptions
+from PIL import Image, ImageChops
+from selenium import webdriver
 
-def is_picture(counter):
+IMG_XPATH = ".//html/body/div[3]/div[3]/div/div/div/div[3]/div"
+ZOOM_BTN_XPATH = ".//html/body/div[3]/div[3]/div/div/div[2]/div[1]/div[2]/div[1]/div"
+OPEN_IMAGE_BTN_XPATH = ".//html/body/div[3]/div[3]/div/div/div[3]/div/content/span"
+AUTHOR_NAME_XPATH = "/html[1]/body[1]/div[3]/div[3]/div[1]/div[1]/div[6]/section[2]/div[1]/ul[1]/li[2]/a[1]"
+PICTURE_NAME_XPATH = "/html[1]/body[1]/div[3]/div[3]/div[1]/div[1]/div[6]/section[2]/div[1]/ul[1]/li[1]"
+TIMEOUT_FOR_IMAGE_LOADING = 45
+
+
+def is_image_loaded(counter):
+    """
+    Checks if image on screenshot is loaded.
+
+    Note from the future: Yes, it checks if pixels around the center dot are not white
+    - it can cause bugs if image is fully white at center. So, feel free to improve this via pull request.
+    """
     im = Image.open('temp/scrapping/image' + str(counter) + '.png')
     rgb_im = im.convert('RGB')
-    r, g, b = rgb_im.getpixel((2000, 1300))
-    if r == 255 and g == 255 and b == 255:
-        return False
-    else:
-        return True
+    white = (255, 255, 255)
+    return all(rgb_im.getpixel(dot) != white for dot in [(2000, 1300), (2100, 1300), (2000, 1400), (2000, 1500)])
 
 
-def is_same(counter):
+def is_screenshot_changed(counter):
+    """
+    Checks if screenshot changed: if yes, image is still loading.
+    """
     if counter > 0:
         prev_counter = counter - 1
         new_file = os.path.getsize('temp/scrapping/image%s.png' % str(counter))
         old_file = os.path.getsize('temp/scrapping/image%s.png' % str(prev_counter))
         os.remove('temp/scrapping/image%s.png' % str(prev_counter))
-        if new_file == old_file:
-            return True
-        else:
-            return False
+        return new_file == old_file
 
 
 def trim(image):
+    """
+    Trims white space around the image.
+
+    Note from the future: image could be cropped incorrectly, if it has white spaces.
+    Feel free to improve this via pull request.
+    """
     bg = Image.new(image.mode, image.size, image.getpixel((0, 0)))
     diff = ImageChops.difference(image, bg)
     diff = ImageChops.add(diff, diff, 2.0, -100)
     bbox = diff.getbbox()
     if bbox:
         return image.crop(bbox)
-
-
-def remove(value, delete_chars):
-    for c in delete_chars:
-        value = value.replace(c, '')
-    return value
+    return image
 
 
 def initialize_folders():
+    """
+    Initializes folder structure for caching files.
+    """
     if not os.path.exists('temp'):
         os.makedirs('temp')
     else:
@@ -54,89 +71,83 @@ def initialize_folders():
         os.makedirs('temp/scrapping')
 
 
-def file_save(name, status):
-    path = status
-    f = filedialog.asksaveasfile(mode='wb', defaultextension=".png", title="Saving picture", initialfile=name, filetypes=(("PNG high resolution image", "*.png"), ("all files", "*.*")))
-    if f is None:
+def file_save(name, temp_img_path):
+    """
+    Copies downloaded image from temporary folder to the new destination.
+    """
+    new_img_buffer = filedialog.asksaveasfile(mode='wb', defaultextension=".png", title="Saving picture",
+                                            initialfile=name,
+                                            filetypes=(("PNG high resolution image", "*.png"), ("all files", "*.*")))
+    if new_img_buffer is None:
         lbl.config(text='Downloading was cancelled')
-        btn.config(state='normal')
+        btn_run.config(state='normal')
         return
-    if os.path.abspath(path) != f.name.replace('/', '\\'):
-        im = Image.open(path)
-        im.save(f)
-        os.remove(path)
-        f.close()
-        lbl.config(text='Success! File saved as : ' + str(status) + '!')
+    new_img_path = new_img_buffer.name
+    new_img_buffer.close()
+    if os.path.abspath(temp_img_path) != new_img_path.replace('/', '\\'):
+        shutil.move(temp_img_path, new_img_path)
+        lbl.config(text='Success! File saved as : ' + str(temp_img_path) + '!')
     else:
         lbl.config(text='Failed! Please next time don\'t replace file in script directory!')
 
 
 def do_scrapping(url):
-    old_url = url
-    url = ''
-
-    for char in old_url:
-        if char == '?':
-            break
-        url += char
-
+    """
+    Starts webdriver, opens url and makes multiple screenshots of zoomed image.
+    """
+    if '?' in url:
+        url = url[:url.index('?')]
     lbl.config(text='2/3: Scrapping: starting webdriver... [it takes several seconds]')
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
-    driver = webdriver.Chrome(executable_path=r"chromedriver.exe", chrome_options=options)
+    driver = webdriver.Chrome(executable_path=r"chromedriver.exe", options=options)
     driver.set_window_size(4000, 4000)
     driver.get(url)
-    xPath3 = r".//html/body/div[3]/div[3]/div/div/div/div[3]/div"  # img xPath
-    xPath2 = r".//html/body/div[3]/div[3]/div/div/div[2]/div[1]/div[2]/div[1]/div"  # zoom xPath
-    xPath1 = r".//html/body/div[3]/div[3]/div/div/div[3]/div/content/span"  # open img xPath
-    image_appeared = False  # flag for starting click on image
-    image_zoom_taked = False
-    last_file = ''  # last succeed file
     lbl.config(text='2/3: Scrapping: waiting for response')
     driver.implicitly_wait(1)
     lbl.config(text='2/3: Scrapping: getting information about artist and picture')
-
+    is_image_appeared = False
+    is_image_zoomed = False
+    last_file = ''
     try:
-        authorPic = driver.find_element_by_xpath(r'/html[1]/body[1]/div[3]/div[3]/div[1]/div[1]/div[6]/section[2]/div[1]/ul[1]/li[2]/a[1]').text  # author of the picture xPath
-    except Exception:
-        authorPic = ''
-
+        author_pic = driver.find_element_by_xpath(AUTHOR_NAME_XPATH).text
+    except selenium.common.exceptions.WebDriverException:
+        author_pic = ''
     try:
-        name_pic = driver.find_element_by_xpath(r'/html[1]/body[1]/div[3]/div[3]/div[1]/div[1]/div[6]/section[2]/div[1]/ul[1]/li[1]').text[7::]  # name of the picture xPath
-        if authorPic != '':
+        name_pic = driver.find_element_by_xpath(PICTURE_NAME_XPATH).text[7:]
+        if author_pic != '':
             name_pic = ' - ' + name_pic
-    except Exception:
+    except (selenium.common.exceptions.WebDriverException, IndexError):
         name_pic = driver.title[0:-23]
-
-    name_file = authorPic + name_pic
-    name_file = remove(name_file, '\/:*?"<>|')
+    name_file = author_pic + name_pic
+    for c in '\\/:*?"<>|':
+        name_file = name_file.replace(c, '')
     lbl.config(text='2/3: Scrapping: starting ' + name_file + ' [+3 sec]')
     t.sleep(3)
-    for i in range(0, 45):  # 45 attempts
+    for i in range(0, TIMEOUT_FOR_IMAGE_LOADING):
         t.sleep(1)
-        if image_appeared:
-            lbl.config(text='2/3: Scrapping: %sth attempt, image appeared, zooming...' % str(i+1) + ' [+6 sec]')
+        if is_image_appeared:
+            lbl.config(text='2/3: Scrapping: %sth attempt, image appeared, zooming...' % str(i + 1) + ' [+6 sec]')
             t.sleep(3)
-            if exImg.get() == 1:
-                elem2 = driver.find_element_by_xpath(xPath1)
+            if is_image_vertical_check.get() == 1:
+                elem2 = driver.find_element_by_xpath(OPEN_IMAGE_BTN_XPATH)
             else:
-                elem2 = driver.find_element_by_xpath(xPath2)
-            elem3 = driver.find_element_by_xpath(xPath3)
+                elem2 = driver.find_element_by_xpath(ZOOM_BTN_XPATH)
+            elem3 = driver.find_element_by_xpath(IMG_XPATH)
             driver.execute_script("arguments[0].click();", elem2)
             driver.execute_script("arguments[0].click();", elem3)
             t.sleep(3)
-            image_appeared = False
-            image_zoom_taked = True
+            is_image_appeared = False
+            is_image_zoomed = True
         else:
-            lbl.config(text='2/3: Scrapping: %sth attempt, waiting for the image...' % str(i+1))
-        lbl.config(text='2/3: Scrapping: %sth attempt, taking snapshot' % str(i+1))
+            lbl.config(text='2/3: Scrapping: %sth attempt, waiting for the image...' % str(i + 1))
+        lbl.config(text='2/3: Scrapping: %sth attempt, taking screenshot' % str(i + 1))
         driver.save_screenshot('temp/scrapping/image%s.png' % str(i))
-        lbl.config(text='2/3: Scrapping: %sth attempt, checking progress...' % str(i+1))
-
-        if is_picture(i) and not image_zoom_taked:
-            image_appeared = True
-        if is_same(i):
+        lbl.config(text='2/3: Scrapping: %sth attempt, checking progress...' % str(i + 1))
+        if is_image_loaded(i) and not is_image_zoomed:
+            is_image_appeared = True
+        if is_screenshot_changed(i):
             last_file = 'temp/scrapping/image%s.png' % str(i)
             break
     lbl.config(text='2/3: Scrapping: Success!')
@@ -148,11 +159,11 @@ def do_finally_changes(last_file, name_file):
     if last_file != '':
         shutil.copyfile(last_file, 'temp/image_result.png')
         shutil.rmtree('temp/scrapping')
-        imOp = Image.open('temp/image_result.png')
-        if exImg.get() == 1:
-            im = imOp.crop((0, 50, 4000, 4000))  # 20!8
+        im = Image.open('temp/image_result.png')
+        if is_image_vertical_check.get() == 1:
+            im = im.crop((0, 50, 4000, 4000))
         else:
-            im = imOp
+            im = im
         im = trim(im)
         im.save(name_file + '.png')
         shutil.rmtree('temp')
@@ -160,9 +171,12 @@ def do_finally_changes(last_file, name_file):
     return 'An error occurred with processing image'
 
 
-def start_process():
-    btn.config(state='disabled')
-    btnPaste.config(state='disabled')
+def process_image():
+    """
+    Processes a chose image: downloads, crops and saves.
+    """
+    btn_run.config(state='disabled')
+    btn_paste.config(state='disabled')
     ent.config(state='disabled')
     chk.config(state='disabled')
     lbl.config(text='Working...')
@@ -174,19 +188,25 @@ def start_process():
     status = do_finally_changes(file, name)
     lbl.config(text='Saving the file: ' + str(status) + '...')
     file_save(status + '.png', status + '.png')
-    btnPaste.config(state='normal')
+    btn_paste.config(state='normal')
     ent.config(state='normal')
-    btn.config(state='normal')
+    btn_run.config(state='normal')
     chk.config(state='normal')
 
 
-def start():
+def start_download():
+    """
+    Starts downloading process.
+    """
     lbl.config(text="Starting..")
-    th = Thread(target=start_process)
+    th = Thread(target=process_image)
     th.start()
 
 
 def on_key_release(event):
+    """
+    Initializes folder structure for caching purposes. Also it removes last cached files.
+    """
     ctrl = (event.state & 0x4) != 0
     if event.keycode == 88 and ctrl and event.keysym.lower() != "x":
         event.widget.event_generate("<<Cut>>")
@@ -201,30 +221,30 @@ def on_key_release(event):
         event.widget.event_generate("<<SelectAll>>")
 
 
-def paste():
-    entryText.set(root.clipboard_get())
+if __name__ == '__main__':
+    root = tk.Tk()
+    root.title('Google Art Downloader 0.1.3')
+    windll.shcore.SetProcessDpiAwareness(1)
+    root.resizable(0, 0)
 
+    entryText = tk.StringVar()
+    ent = tk.Entry(root, width=77, textvariable=entryText)
+    entryText.set(r"https://artsandculture.google.com/asset/the-starry-night/bgEuwDxel93-Pg")
+    lbl = tk.Label(root, width=80)
+    btn_run = tk.Button(root, text="Download", command=start_download)
+    btn_paste = tk.Button(root, text="Paste url", command=lambda: entryText.set(root.clipboard_get()))
+    is_image_vertical_check = tk.IntVar()
+    chk = tk.Checkbutton(root, text="Is image a vertical oriented?", variable=is_image_vertical_check, anchor=tk.W)
+    about = tk.Label(root, text="[github.com/mewforest/google-art-downloader]", fg='#888888')
+    about.bind('<Button-1>', lambda e: webbrowser.open('https://github.com/mewforest/google-art-downloader'))
 
-root = tk.Tk()
-root.title('Google Art Downloader 0.1.2 beta')
-windll.shcore.SetProcessDpiAwareness(1)
-root.resizable(0, 0)
+    lbl.grid(row=1, column=1, columnspan=4, pady=1)
+    ent.grid(row=2, column=1, columnspan=2, padx=6, pady=1)
+    btn_paste.grid(row=2, column=3, padx=3, pady=2)
+    btn_run.grid(row=2, column=4, padx=3, pady=2)
+    chk.grid(row=3, column=1, columnspan=1, pady=1, padx=5, sticky=tk.W)
+    about.grid(row=3, column=2, columnspan=1, pady=1, padx=1, sticky=tk.W)
 
-entryText = tk.StringVar()
-ent = tk.Entry(root, width=77, textvariable=entryText)
-entryText.set(r"https://artsandculture.google.com/asset/the-starry-night/bgEuwDxel93-Pg")
-lbl = tk.Label(root, width=80)
-btn = tk.Button(root, text="Download", command=start)
-btnPaste = tk.Button(root, text="Paste url", command=paste)
-exImg = tk.IntVar()
-chk = tk.Checkbutton(root, text="Check this, if your image cropped wrongly (only for elongated vertical image)", variable=exImg)
-
-lbl.grid(row=1, column=1, columnspan=3, pady=1)
-ent.grid(row=2, column=1, padx=6, pady=1)
-btnPaste.grid(row=2, column=2, padx=3, pady=2)
-btn.grid(row=2, column=3, padx=3, pady=2)
-chk.grid(row=3, column=1, columnspan=1, pady=1)
-
-lbl.configure(text='Insert here link to picture from Google Arts & Culture:')
-ent.bind("<Key>", on_key_release, "+")
-root.mainloop()
+    lbl.configure(text='Insert here link to picture from Google Arts & Culture:')
+    ent.bind("<Key>", on_key_release, "+")
+    root.mainloop()

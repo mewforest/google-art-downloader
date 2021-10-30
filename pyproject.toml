@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "google-art-downloader"
+version = "0.1.3"
+description = "Google Arts And Culture Downloader"
+authors = ["Mew Forest <mew.forest@gmail.com>"]
+license = "GPLv3"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+selenium = "^3.141.0"
+Pillow = "^8.0.0"
+
+[tool.poetry.dev-dependencies]
+pylint = "^2.6.0"
+pytest = "^6.1.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
