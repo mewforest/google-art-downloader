@@ -1,14 +1,16 @@
-import os, shutil
+import os
+import platform
+import shutil
 import time as t
 import tkinter as tk
 import webbrowser
 from threading import Thread
 from tkinter import filedialog
 from ctypes import windll
-
 import selenium.common.exceptions
 from PIL import Image, ImageChops
 from selenium import webdriver
+
 
 IMG_XPATH = ".//html/body/div[3]/div[3]/div/div/div/div[3]/div"
 ZOOM_BTN_XPATH = ".//html/body/div[3]/div[3]/div/div/div[2]/div[1]/div[2]/div[1]/div"
@@ -101,7 +103,16 @@ def do_scrapping(url):
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
-    driver = webdriver.Chrome(executable_path=r"chromedriver.exe", options=options)
+    os_name = platform.system()
+    if os_name == 'Windows':
+        executable = "bin/chromedriver_win32/chromedriver.exe"
+    elif os_name == 'Linux':
+        executable = "bin/chromedriver_linux64/chromedriver.exe"
+    elif os_name == 'Darwin':
+        executable = "bin/chromedriver_mac32/chromedriver.exe"
+    else:
+        raise OSError(f'Operation system is not supported now: {os_name}')
+    driver = webdriver.Chrome(executable_path=executable, options=options)
     driver.set_window_size(4000, 4000)
     driver.get(url)
     lbl.config(text='2/3: Scrapping: waiting for response')
