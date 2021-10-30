@@ -103,3 +103,6 @@ venv/
 .vscode/
 .idea/
 .idea
+dist
+bin
+build

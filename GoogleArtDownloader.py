@@ -52,7 +52,8 @@ def trim(image):
     Note from the future: image could be cropped incorrectly, if it has white spaces.
     Feel free to improve this via pull request.
     """
-    bg = Image.new(image.mode, image.size, image.getpixel((0, 0)))
+    image = image.convert('RGB')
+    bg = Image.new(image.mode, image.size, (255, 255, 255))
     diff = ImageChops.difference(image, bg)
     diff = ImageChops.add(diff, diff, 2.0, -100)
     bbox = diff.getbbox()
@@ -86,7 +87,10 @@ def file_save(name, temp_img_path):
         return
     new_img_path = new_img_buffer.name
     new_img_buffer.close()
-    if os.path.abspath(temp_img_path) != new_img_path.replace('/', '\\'):
+    temp_img_path = os.path.abspath(temp_img_path)
+    if platform.system() == 'Windows':
+        new_img_path = new_img_path.replace('/', '\\')
+    if temp_img_path != new_img_path:
         shutil.move(temp_img_path, new_img_path)
         lbl.config(text='Success! File saved as : ' + str(temp_img_path) + '!')
     else:
@@ -168,13 +172,14 @@ def do_scrapping(url):
 
 def do_finally_changes(last_file, name_file):
     if last_file != '':
-        shutil.copyfile(last_file, 'temp/image_result.png')
+        shutil.move(last_file, 'temp/image_result.png')
         shutil.rmtree('temp/scrapping')
         im = Image.open('temp/image_result.png')
-        if is_image_vertical_check.get() == 1:
-            im = im.crop((0, 50, 4000, 4000))
-        else:
-            im = im
+        im = im.crop((0, 50, 4000, 4000))
+        # if is_image_vertical_check.get() == 1:
+        #     pass
+        # else:
+        #     im = im
         im = trim(im)
         im.save(name_file + '.png')
         shutil.rmtree('temp')
