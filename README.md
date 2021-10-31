@@ -22,48 +22,62 @@ Compiled release requires just connection to the Internet and Chrome installed (
 
 If you want co compile your own version or use it without downloading compiled files:
 
-1. Install Python 3.6+ and add interpreter to PATH
+1. Install Python 3.8+ and add interpreter to PATH
 2. Install Google Chrome or Chromium and add executable to PATH
 3. Install all project dependencies:
    ```shell
    python -m pip install -r requirements.txt
    ```
+4. **Only for Linux and MacOS**: be sure you make webdrivers from `bin` executables.
+   - Linux:
+    ```shell
+    chmod +x bin/chromedriver_linux64/chromedriver
+    ```
+    - MacOS:
+    ```shell
+    chmod +x bin/chromedriver_mac64/chromedriver
+    ```
+5. Done! You have to just run a script:
+    ```shell
+    python GoogleArtDownloader.py
+    ```
    
 ### Compiling to executable 
 If you need to compile it with PyInstaller (for Windows), follow this instructions:
-- Change source code of installed Selenium to disable terminal showing:
+1. Change source code of installed Selenium to disable Selenium terminal showing 
+  (it's a [common bug](https://stackoverflow.com/a/46543874/8363830) by the way):
   
-  Open file: `<your-path-to-python>\Lib\site-packages\selenium\webdriver\common\service.py`. 
-  
-  and override method in `selenium.webdriver.common.service.Service`:
-  ```python
-  self.process = subprocess.Popen(cmd, env=self.env,
-                                         close_fds=platform.system() != 'Windows',
-                                         stdout=self.log_file,
-                                         stderr=self.log_file,
-                                         stdin=PIPE,
-                                         )
-  ```
-  To this:
-   ```python
-   self.process = subprocess.Popen(cmd, env=self.env,
-                                               close_fds=True,
-                                               stdout=self.log_file,
-                                               stderr=self.log_file,
-                                               stdin=PIPE,
-                                               )
-   ```
-- After changes above, execute commands below to compile it:
+   - Open file: `<your-path-to-python>\Lib\site-packages\selenium\webdriver\common\service.py`. 
+   - In opened file override method placed in `selenium.webdriver.common.service.Service`:
+      ```python
+      self.process = subprocess.Popen(cmd, env=self.env,
+                                             close_fds=platform.system() != 'Windows',
+                                             stdout=self.log_file,
+                                             stderr=self.log_file,
+                                             stdin=PIPE,
+                                             )
+      ```
+      To this:
+       ```python
+       self.process = subprocess.Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, creationflags=0x08000000)
+       ```
+2.  After changes above, execute commands below to compile it:
    ```shell
    python -m pip install pyinstaller --upgrade
-   pyinstaller --onefile --noconsole --icon=favicon.ico .\GoogleArtDownloader.py
+   python -m PyInstaller --onefile --noconsole --icon=favicon.ico .\GoogleArtDownloader.py
    ```
-- Copy `bin` folder to `dist`.
-- Done! Now your compiled program in `dist` folder.
+3. Copy `bin` folder to `dist`.
+4. Done! Congratulations, your compiled script is ready to use in `dist` folder.
+
+## Status of project
+
+This utility doesn't download a maximum possible resolution of the image you provide.
+It's because of webdriver screenshot limitation. If you really need the **maximum possible quality**, see alternatives section 
+or feel free to improve this script with pull request. 
 
 ## Alternatives
 If you are interested in more highest image resolution or Selenium webdriver isn't starting well, you could use alternatives:
 - [dezoomify](https://ophir.alwaysdata.net/dezoomify/dezoomify.html) (works online),
 - [dezoomify-rs](https://github.com/lovasoa/dezoomify-rs) (a command-line application for windows, linux and macos),
-- or [gapdecoder](https://github.com/gap-decoder/gapdecoder) (a python script) instead.
+- [gapdecoder](https://github.com/gap-decoder/gapdecoder) (a python script) instead.
 

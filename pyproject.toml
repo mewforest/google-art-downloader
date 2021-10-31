@@ -6,13 +6,14 @@ authors = ["Mew Forest <mew.forest@gmail.com>"]
 license = "GPLv3"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "=3.8,<3.11"
 selenium = "^3.141.0"
 Pillow = "^8.0.0"
 
 [tool.poetry.dev-dependencies]
 pylint = "^2.6.0"
 pytest = "^6.1.1"
+pyinstaller = "^4.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
