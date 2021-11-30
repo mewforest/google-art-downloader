@@ -1,24 +1,28 @@
-# Google Art Downloader 
+# Google Art Downloader
 
 Cross-platform utility allows you to save all images from [Google Art Project](https://artsandculture.google.com) in high quality (up to 4K).
 
+![screenshot](https://user-images.githubusercontent.com/15357833/144015262-a51e5260-7d81-40eb-b106-9faa9fc5ae1b.png)
+
 ⭐ It works perfectly from 2018 year till today, thanks for stars!
 
+---
+
 ## Usage
-Just download archive from [releases](https://github.com/mewforest/google-art-downloader/releases) and unzip it to any
-folder, after all: just run **google-art-downloader.exe**.
 
-![2021-10-31_01h43_29](https://user-images.githubusercontent.com/15357833/139560460-020941b1-bf22-43c2-91f2-c6c1640d1b4b.png)
+1. Just download a zip archive with binaries from [releases](https://github.com/mewforest/google-art-downloader/releases), unzip it to any
+folder and run **google-art-downloader.exe**.
+2. Use button **"Paste url"** or `CTRL+V` to paste your url and click **"Download"** to start the image processing.
 
-You can insert link to the text field using button **"Paste url"** (or `CTRL+V`) and click **"Download"** to start the image downloading.
+See [Running with Python](#running-with-python) section, if are running on Linux or macOS.
 
 ## Requirements
 
-Compiled release requires just connection to the Internet and Chrome installed (added in PATH).
+Compiled release requires just connection to the Internet and Chrome installed (should be added in PATH).
 
 ## Running from the source
 
-### Running with Python
+### <a name="running-with-python"></a> Running with Python
 
 > This method is also suit for you if you don't use Windows.
 
@@ -45,7 +49,7 @@ If you want co compile your own version or use it without downloading compiled f
     ```
    
 ### Compiling to executable 
-If you need to compile it with PyInstaller (for Windows), follow this instructions:
+If you need to compile it with PyInstaller for Windows, follow this instructions:
 1. Change source code of installed Selenium to disable Selenium terminal showing 
   (it's a [common bug](https://stackoverflow.com/a/46543874/8363830) by the way):
   
