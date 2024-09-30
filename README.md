@@ -1,5 +1,9 @@
 # Google Art Downloader
 
+```
+Project is archived and read-only fot now
+```
+
 Cross-platform utility allows you to save all images from [Google Art Project](https://artsandculture.google.com) in high quality (up to 4K).
 
 ![screenshot](https://user-images.githubusercontent.com/15357833/144015262-a51e5260-7d81-40eb-b106-9faa9fc5ae1b.png)
@@ -76,6 +80,8 @@ If you need to compile it with PyInstaller for Windows, follow this instructions
 4. Done! Congratulations, your compiled script is ready to use in `dist` folder.
 
 ## Status of project
+
+Deprecated, please use alternatives.
 
 This utility doesn't download a maximum possible resolution of the image you provide.
 It's because of webdriver screenshot limitation. If you really need the **maximum possible quality**, see alternatives section 
